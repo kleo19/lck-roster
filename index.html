@@ -46,11 +46,13 @@ th,td{padding:6px 3px;text-align:right;font-size:11px;border-bottom:1px solid va
 th{color:var(--dim);font-weight:400;font-size:10px}
 td.n,th.n{text-align:left;width:29%}
 td.p,th.p{text-align:center;width:13%}
+#finalTbl td.p:nth-child(3),#finalTbl th.p:nth-child(3){width:17%}
 tr.pick{cursor:pointer}
 tr.pick:active{background:#21262d}
 tr.off{opacity:.34}
 tr.off td{cursor:default}
 .no{font-size:9px;color:var(--dim);white-space:nowrap}
+.tm{font-size:9px;color:var(--dim)}
 .tag{display:inline-block;background:#21262d;border-radius:4px;padding:1px 5px;font-size:10px;color:var(--dim)}
 .from{font-size:12px;color:var(--dim);margin-bottom:7px}
 
@@ -74,7 +76,7 @@ summary{cursor:pointer;color:var(--dim);font-size:12px}
 
 <section id="home">
   <h1><b>30-0</b> LCK 올타임 로스터</h1>
-  <div class="sub">2016-2025 LCK · 룰렛으로 다섯 자리를 채워 전승에 도전</div>
+  <div class="sub">2016-2026 LCK · 룰렛으로 다섯 자리를 채워 전승에 도전</div>
   <div class="card">
     <button class="primary" id="start" style="width:100%;padding:14px;font-size:15px">시작</button>
     <details class="rules">
@@ -85,6 +87,7 @@ summary{cursor:pointer;color:var(--dim);font-size:12px}
           <li>룰렛을 돌리면 연도와 팀이 하나씩 정해짐</li>
           <li>그 해 그 팀에서 뛴 선수 중 한 명을 골라 자기 포지션에 배치</li>
           <li>마음에 안 들면 같은 팀의 다른 연도로, 또는 같은 연도의 다른 팀으로 한 번씩 다시 뽑을 수 있음</li>
+          <li>팀 이름이 바뀐 해도 같은 팀으로 이어짐 (SK Telecom T1과 T1, 아프리카와 광동 프릭스)</li>
           <li>같은 선수는 한 번만</li>
           <li>다섯 자리를 다 채우면 시즌 결과가 나옴</li>
         </ul>
@@ -144,12 +147,13 @@ const POSKR={top:"탑",jng:"정글",mid:"미드",bot:"바텀",sup:"서폿"};
 const WSUM=L.weights.reduce((a,b)=>a+b,0);
 
 const PLAYERS=L.players.map(r=>({
-  year:r[0],team:r[1],name:r[2],pos:r[3],games:r[4],
-  raw:r.slice(5,5+NF), z:r.slice(5+NF,5+NF*2),
+  year:r[0],fr:r[1],team:r[2],name:r[3],pos:r[4],games:r[5],
+  raw:r.slice(6,6+NF), z:r.slice(6+NF,6+NF*2),
   vs:r[0]>=L.vspmFrom
 }));
-const BY={},YEARS=[];
-for(const p of PLAYERS){const k=p.year+"|"+p.team;(BY[k]=BY[k]||[]).push(p);}
+// 룰렛의 단위는 계보(fr)다. 화면에는 그 해 실제 팀명(team)을 쓴다.
+const BY={},NAME={},YEARS=[];
+for(const p of PLAYERS){const k=p.year+"|"+p.fr;(BY[k]=BY[k]||[]).push(p);NAME[k]=p.team;}
 const TEAMS=Object.keys(BY);
 for(const k of TEAMS){const y=+k.split("|")[0];if(YEARS.indexOf(y)<0)YEARS.push(y);}
 YEARS.sort();
@@ -197,7 +201,7 @@ function upd(){
   let canY=false,canT=false;
   if(S.cur){
     const parts=S.cur.split("|");
-    canY=yearsOfTeam(parts[1],+parts[0]).length>0;
+    canY=yearsOfFr(parts[1],+parts[0]).length>0;
     canT=otherTeamsOfYear(+parts[0],S.cur).length>0;
   }
   document.getElementById("rrYear").disabled=!S.cur||S.ry<1||!canY;
@@ -233,17 +237,17 @@ function pickAny(){
   }
   return null;
 }
-function yearsOfTeam(team,exclYear){
+function yearsOfFr(fr,exclYear){
   return TEAMS.filter(function(k){
     const parts=k.split("|");
-    return parts[1]===team && +parts[0]!==exclYear && cands(k).length>0;
+    return parts[1]===fr && +parts[0]!==exclYear && cands(k).length>0;
   });
 }
 function otherTeamsOfYear(year,exclKey){
   return TEAMS_BY_YEAR[year].filter(function(k){return k!==exclKey&&cands(k).length>0;});
 }
-function pickOtherYear(year,team){
-  const ks=yearsOfTeam(team,year);
+function pickOtherYear(year,fr){
+  const ks=yearsOfFr(fr,year);
   return ks.length?ks[Math.floor(Math.random()*ks.length)]:null;
 }
 function pickOtherTeam(year,exclKey){
@@ -258,14 +262,14 @@ function showReels(key,done,lock){
   if(spinT)rt.classList.add("spin");
   let n=0;
   const iv=setInterval(function(){
-    const k=TEAMS[Math.floor(Math.random()*TEAMS.length)].split("|");
-    if(spinY)ry.querySelector("span").textContent=k[0];
-    if(spinT)rt.querySelector("span").textContent=k[1];
+    const k=TEAMS[Math.floor(Math.random()*TEAMS.length)];
+    if(spinY)ry.querySelector("span").textContent=k.split("|")[0];
+    if(spinT)rt.querySelector("span").textContent=NAME[k];
     if(++n>11){
       clearInterval(iv);
       ry.classList.remove("spin");rt.classList.remove("spin");
       ry.querySelector("span").textContent=parts[0];
-      rt.querySelector("span").textContent=parts[1];
+      rt.querySelector("span").textContent=NAME[key];
       if(done)done();
     }
   },55);
@@ -273,7 +277,7 @@ function showReels(key,done,lock){
 function openCands(key){
   S.cur=key;
   const parts=key.split("|");
-  document.getElementById("fromLabel").textContent=parts[0]+" "+parts[1]+" — 한 명을 고르세요";
+  document.getElementById("fromLabel").textContent=parts[0]+" "+NAME[key]+" — 한 명을 고르세요";
   const list=rosterOf(key);
   let html='<tr><th class="n">선수</th><th class="p">포지션</th>'+
     F.map(function(f){return '<th>'+SHORT[f]+'</th>';}).join("")+'</tr>';
@@ -322,12 +326,12 @@ function finish(){
       '<div class="mono" style="text-align:right;color:var(--dim)">'+
       (has?((z>0?"+":"")+z.toFixed(2)):"-")+'</div></div>';
   }).join("");
-  let html='<tr><th class="n">선수</th><th class="p">포지션</th><th class="p">연도</th>'+
+  let html='<tr><th class="n">선수</th><th class="p">포지션</th><th class="p">소속</th>'+
     F.map(f=>'<th>'+SHORT[f]+'</th>').join("")+'</tr>';
   html+=POS.map(function(q){
     const p=S.filled[q];
     return '<tr><td class="n">'+p.name+'</td><td class="p"><span class="tag">'+POSKR[q]+'</span></td>'+
-      '<td class="p mono" style="font-size:10px">'+p.year+'</td>'+
+      '<td class="p mono" style="font-size:10px">'+p.year+'<br><span class="tm">'+p.team+'</span></td>'+
       F.map(function(f,j){
         return '<td class="mono">'+((f==="vspm"&&!p.vs)?"-":fmt[f](p.raw[j]))+'</td>';
       }).join("")+'</tr>';
