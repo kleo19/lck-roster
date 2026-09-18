@@ -48,6 +48,9 @@ td.n,th.n{text-align:left;width:29%}
 td.p,th.p{text-align:center;width:13%}
 tr.pick{cursor:pointer}
 tr.pick:active{background:#21262d}
+tr.off{opacity:.34}
+tr.off td{cursor:default}
+.no{font-size:9px;color:var(--dim);white-space:nowrap}
 .tag{display:inline-block;background:#21262d;border-radius:4px;padding:1px 5px;font-size:10px;color:var(--dim)}
 .from{font-size:12px;color:var(--dim);margin-bottom:7px}
 
@@ -81,7 +84,7 @@ summary{cursor:pointer;color:var(--dim);font-size:12px}
         <ul>
           <li>룰렛을 돌리면 연도와 팀이 하나씩 정해짐</li>
           <li>그 해 그 팀에서 뛴 선수 중 한 명을 골라 자기 포지션에 배치</li>
-          <li>마음에 안 들면 연도만, 또는 팀만 한 번씩 다시 뽑을 수 있음</li>
+          <li>마음에 안 들면 같은 팀의 다른 연도로, 또는 같은 연도의 다른 팀으로 한 번씩 다시 뽑을 수 있음</li>
           <li>같은 선수는 한 번만</li>
           <li>다섯 자리를 다 채우면 시즌 결과가 나옴</li>
         </ul>
@@ -191,8 +194,14 @@ function clearReels(){
 function upd(){
   document.getElementById("ryLeft").textContent=S.ry;
   document.getElementById("rtLeft").textContent=S.rt;
-  document.getElementById("rrYear").disabled=!S.cur||S.ry<1;
-  document.getElementById("rrTeam").disabled=!S.cur||S.rt<1;
+  let canY=false,canT=false;
+  if(S.cur){
+    const parts=S.cur.split("|");
+    canY=yearsOfTeam(parts[1],+parts[0]).length>0;
+    canT=otherTeamsOfYear(+parts[0],S.cur).length>0;
+  }
+  document.getElementById("rrYear").disabled=!S.cur||S.ry<1||!canY;
+  document.getElementById("rrTeam").disabled=!S.cur||S.rt<1||!canT;
   document.getElementById("spin").disabled=!!S.cur||S.rolling;
 }
 function renderLineup(){
@@ -206,11 +215,17 @@ function renderLineup(){
 function cands(key){
   return BY[key].filter(p=>!S.filled[p.pos]&&!S.taken[p.name]);
 }
-function pickTeamKey(exclYear){
+function rosterOf(key){
+  return BY[key].slice().sort(function(a,b){return POS.indexOf(a.pos)-POS.indexOf(b.pos);});
+}
+function why(p){
+  if(S.taken[p.name])return "이미 뽑음";
+  if(S.filled[p.pos])return "자리 참";
+  return null;
+}
+function pickAny(){
   for(let i=0;i<800;i++){
-    let pool=YEARS;
-    if(exclYear!=null)pool=YEARS.filter(y=>y!==exclYear);
-    const y=pool[Math.floor(Math.random()*pool.length)];
+    const y=YEARS[Math.floor(Math.random()*YEARS.length)];
     const ks=TEAMS_BY_YEAR[y];
     if(!ks.length)continue;
     const k=ks[Math.floor(Math.random()*ks.length)];
@@ -218,20 +233,34 @@ function pickTeamKey(exclYear){
   }
   return null;
 }
-function pickSameYear(year,exclKey){
-  const ks=TEAMS_BY_YEAR[year].filter(k=>k!==exclKey&&cands(k).length);
-  if(!ks.length)return null;
-  return ks[Math.floor(Math.random()*ks.length)];
+function yearsOfTeam(team,exclYear){
+  return TEAMS.filter(function(k){
+    const parts=k.split("|");
+    return parts[1]===team && +parts[0]!==exclYear && cands(k).length>0;
+  });
 }
-function showReels(key,done){
+function otherTeamsOfYear(year,exclKey){
+  return TEAMS_BY_YEAR[year].filter(function(k){return k!==exclKey&&cands(k).length>0;});
+}
+function pickOtherYear(year,team){
+  const ks=yearsOfTeam(team,year);
+  return ks.length?ks[Math.floor(Math.random()*ks.length)]:null;
+}
+function pickOtherTeam(year,exclKey){
+  const ks=otherTeamsOfYear(year,exclKey);
+  return ks.length?ks[Math.floor(Math.random()*ks.length)]:null;
+}
+function showReels(key,done,lock){
   const parts=key.split("|");
   const ry=document.getElementById("reelYear"),rt=document.getElementById("reelTeam");
-  ry.classList.add("spin");rt.classList.add("spin");
+  const spinY=lock!=="year", spinT=lock!=="team";
+  if(spinY)ry.classList.add("spin");
+  if(spinT)rt.classList.add("spin");
   let n=0;
   const iv=setInterval(function(){
     const k=TEAMS[Math.floor(Math.random()*TEAMS.length)].split("|");
-    ry.querySelector("span").textContent=k[0];
-    rt.querySelector("span").textContent=k[1];
+    if(spinY)ry.querySelector("span").textContent=k[0];
+    if(spinT)rt.querySelector("span").textContent=k[1];
     if(++n>11){
       clearInterval(iv);
       ry.classList.remove("spin");rt.classList.remove("spin");
@@ -245,11 +274,13 @@ function openCands(key){
   S.cur=key;
   const parts=key.split("|");
   document.getElementById("fromLabel").textContent=parts[0]+" "+parts[1]+" — 한 명을 고르세요";
-  const list=cands(key).sort((a,b)=>POS.indexOf(a.pos)-POS.indexOf(b.pos));
+  const list=rosterOf(key);
   let html='<tr><th class="n">선수</th><th class="p">포지션</th>'+
-    F.map(f=>'<th>'+SHORT[f]+'</th>').join("")+'</tr>';
+    F.map(function(f){return '<th>'+SHORT[f]+'</th>';}).join("")+'</tr>';
   html+=list.map(function(p,i){
-    return '<tr class="pick" data-i="'+i+'"><td class="n">'+p.name+'</td>'+
+    const blocked=why(p);
+    return '<tr class="'+(blocked?"off":"pick")+'" data-i="'+i+'">'+
+      '<td class="n">'+p.name+(blocked?' <span class="no">'+blocked+'</span>':'')+'</td>'+
       '<td class="p"><span class="tag">'+POSKR[p.pos]+'</span></td>'+
       F.map(function(f,j){
         return '<td class="mono">'+((f==="vspm"&&!p.vs)?"-":fmt[f](p.raw[j]))+'</td>';
@@ -312,30 +343,31 @@ function show(id){
 }
 document.getElementById("start").onclick=function(){reset();show("draft");};
 document.getElementById("again").onclick=function(){reset();show("draft");};
+function reroll(k,lock){
+  S.cur=null;S.rolling=true;
+  document.getElementById("candCard").classList.add("hidden");upd();
+  showReels(k,function(){S.rolling=false;openCands(k);},lock);
+}
 document.getElementById("spin").onclick=function(){
   if(S.rolling||S.cur)return;
-  const k=pickTeamKey(null);
+  const k=pickAny();
   if(!k)return;
   S.rolling=true;upd();
-  showReels(k,function(){S.rolling=false;openCands(k);});
+  showReels(k,function(){S.rolling=false;openCands(k);},null);
 };
 document.getElementById("rrYear").onclick=function(){
   if(S.rolling||!S.cur||S.ry<1)return;
-  const y=+S.cur.split("|")[0];
-  const k=pickTeamKey(y);
+  const parts=S.cur.split("|");
+  const k=pickOtherYear(+parts[0],parts[1]);
   if(!k)return;
-  S.ry--;S.cur=null;S.rolling=true;
-  document.getElementById("candCard").classList.add("hidden");upd();
-  showReels(k,function(){S.rolling=false;openCands(k);});
+  S.ry--;reroll(k,"team");
 };
 document.getElementById("rrTeam").onclick=function(){
   if(S.rolling||!S.cur||S.rt<1)return;
-  const y=+S.cur.split("|")[0];
-  const k=pickSameYear(y,S.cur);
+  const parts=S.cur.split("|");
+  const k=pickOtherTeam(+parts[0],S.cur);
   if(!k)return;
-  S.rt--;S.cur=null;S.rolling=true;
-  document.getElementById("candCard").classList.add("hidden");upd();
-  showReels(k,function(){S.rolling=false;openCands(k);});
+  S.rt--;reroll(k,"year");
 };
 reset();
 </script>
