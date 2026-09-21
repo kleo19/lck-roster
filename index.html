@@ -95,6 +95,7 @@ summary{cursor:pointer;color:var(--dim);font-size:12px}
         <ul>
           <li>경기당 킬, 분당 딜, 분당 CS, 15분 경험치차, 분당 시야점수</li>
           <li>실제 LCK 팀 성적을 기준으로 환산해 정규 시즌 30경기 예상 승수가 나옴</li>
+          <li>자리마다 팀에 미치는 영향이 다름 (미드 > 정글 > 바텀 > 탑 > 서폿)</li>
         </ul>
       </div>
     </details>
@@ -160,13 +161,24 @@ YEARS.sort();
 const TEAMS_BY_YEAR={};
 for(const y of YEARS)TEAMS_BY_YEAR[y]=TEAMS.filter(k=>+k.split("|")[0]===y);
 
+// 포지션마다 팀 기여도가 다르다(posWeights). 단순 평균이 아니라 가중 평균.
+const PW=L.posWeights;
+function wavg(players,i){
+  let num=0,den=0;
+  for(const pos of POS){
+    const v=players.filter(p=>p.pos===pos);
+    if(!v.length)continue;
+    num+=PW[pos]*(v.reduce((s,p)=>s+p.z[i],0)/v.length);
+    den+=PW[pos];
+  }
+  return den?num/den:0;
+}
 function dev(lineup){
-  const mean=new Array(NF).fill(0);
-  for(const p of lineup)for(let i=0;i<NF;i++)mean[i]+=p.z[i];
-  for(let i=0;i<NF;i++)mean[i]/=lineup.length;
+  const mean=new Array(NF);
+  for(let i=0;i<NF;i++)mean[i]=wavg(lineup,i);
   const ok=lineup.filter(p=>p.vs);
   const mask=new Array(NF).fill(1);
-  if(ok.length){mean[VI]=ok.reduce((s,p)=>s+p.z[VI],0)/ok.length;}
+  if(ok.length){mean[VI]=wavg(ok,VI);}
   else mask[VI]=0;
   let w=L.weights.map((x,i)=>x*mask[i]);
   const ws=w.reduce((a,b)=>a+b,0);
@@ -312,11 +324,10 @@ function finish(){
   const gd=document.getElementById("recGrade");
   gd.textContent=g;
   gd.style.color=w>=C.games?"var(--gold)":(w>=18?"var(--ok)":(w>=10?"var(--tx)":"var(--hot)"));
-  const mean=new Array(NF).fill(0);
-  for(const p of S.lineup)for(let i=0;i<NF;i++)mean[i]+=p.z[i];
-  for(let i=0;i<NF;i++)mean[i]/=5;
+  const mean=new Array(NF);
+  for(let i=0;i<NF;i++)mean[i]=wavg(S.lineup,i);
   const ok=S.lineup.filter(p=>p.vs);
-  if(ok.length)mean[VI]=ok.reduce((s,p)=>s+p.z[VI],0)/ok.length;
+  if(ok.length)mean[VI]=wavg(ok,VI);
   document.getElementById("bars").innerHTML=F.map(function(f,i){
     const has=(f!=="vspm")||ok.length>0;
     const z=has?(mean[i]-L.pooled[i])/L.sd[i]:0;
