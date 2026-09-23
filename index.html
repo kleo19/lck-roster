@@ -8,7 +8,6 @@
 :root{
   --bg:#0a0e14; --card:#151b24; --line:#252d3a; --tx:#e6edf3; --dim:#8b949e;
   --gold:#c8aa6e; --gold2:#f0d9a8; --blue:#0ac8b9; --hot:#e84057; --ok:#3fb950;
-  --top:#e8a33d; --jng:#5cc98f; --mid:#4da3ff; --bot:#e8574a; --sup:#b57ae8;
 }
 @keyframes pop{from{transform:scale(.82);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes rise{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
@@ -16,6 +15,12 @@
 @keyframes grow{from{width:0}}
 @keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
 @keyframes fall{to{transform:translateY(104vh) rotate(560deg)}}
+@keyframes land{0%{transform:scale(.9)}55%{transform:scale(1.13)}100%{transform:scale(1)}}
+@keyframes ring{from{opacity:.95;transform:scale(1)}to{opacity:0;transform:scale(1.16)}}
+@keyframes slotpop{0%{transform:scale(.86)}58%{transform:scale(1.07)}100%{transform:scale(1)}}
+@keyframes rowpick{from{background:color-mix(in srgb,var(--c) 62%,transparent)}
+  to{background:transparent}}
+@keyframes flashbar{from{opacity:.9;transform:scaleX(0)}to{opacity:0;transform:scaleX(1)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 *{box-sizing:border-box}
 body{margin:0;color:var(--tx);
@@ -51,27 +56,36 @@ button:not(:disabled):hover{filter:brightness(1.14)}
 .slot::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--c);opacity:.45}
 .slot.done{border-color:var(--c)}
 .slot.done::before{opacity:1}
-.slot.done .nm{animation:pop .22s ease-out}
 .slot .pos{font-size:12px;color:var(--dim);letter-spacing:.5px;font-weight:600}
-.slot.done .pos{color:var(--c)}
 .slot .nm{font-size:14px;font-weight:700;margin-top:5px;word-break:break-all;line-height:1.2}
 .slot .yr{font-size:11px;color:var(--dim);margin-top:3px}
-.slot .tmn{font-size:10px;color:#5a6472;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .tmn{font-size:10px;color:var(--c);font-weight:700;margin-top:1px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot.done{background:linear-gradient(180deg,color-mix(in srgb,var(--c) 11%,transparent),transparent 62%),#0b1017}
+.slot.just{animation:slotpop .42s cubic-bezier(.2,1.5,.4,1);z-index:2}
+.slot.just::after{content:"";position:absolute;inset:-1px;border-radius:11px;
+  border:2px solid var(--c);animation:ring .6s ease-out forwards;pointer-events:none}
 .prog{display:flex;gap:4px;margin:0 0 10px}
 .prog i{flex:1;height:3px;border-radius:2px;background:#222a35;transition:background .25s}
 .prog i.on{background:var(--gold)}
 
 .reels{display:grid;grid-template-columns:1fr 1.6fr;gap:8px;margin-bottom:8px}
-.reel{position:relative;background:#0b1017;border:1px solid var(--line);border-radius:11px;
-  padding:9px;text-align:center;overflow:hidden}
-.reel.spin{border-color:rgba(10,200,185,.5)}
+.reel{--c:var(--gold);position:relative;background:#0b1017;border:1px solid var(--line);
+  border-radius:11px;padding:9px;text-align:center;overflow:visible;
+  transition:border-color .25s,background .25s}
+.reel.spin{border-color:rgba(10,200,185,.5);overflow:hidden}
 .reel.spin::after{content:"";position:absolute;inset:0;
   background:linear-gradient(90deg,transparent,rgba(10,200,185,.13),transparent);
   animation:sweep .7s linear infinite}
-.reel.land span{animation:pop .24s ease-out}
+.reel.land{border-color:var(--c);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--c) 14%,transparent),transparent 70%),#0b1017;
+  animation:land .4s cubic-bezier(.2,1.6,.4,1)}
+.reel.land::before{content:"";position:absolute;inset:-2px;border-radius:13px;
+  border:2px solid var(--c);animation:ring .62s ease-out forwards;pointer-events:none}
+.reel.land span{color:var(--c);text-shadow:0 0 16px color-mix(in srgb,var(--c) 55%,transparent)}
 .reel small{display:block;font-size:12px;color:var(--dim)}
-.reel span{font-size:20px;font-weight:700;letter-spacing:-.3px}
-.reel.spin span{color:var(--blue)}
+.reel span{font-size:20px;font-weight:700;letter-spacing:-.3px;transition:color .2s}
+.reel.spin span{color:var(--blue);text-shadow:none}
 .acts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
 .acts button{font-size:14px;padding:11px 4px}
 
@@ -84,10 +98,15 @@ td.p,th.p{text-align:center;width:11%}
 tr.pick{cursor:pointer;transition:background .12s}
 tr.pick:hover{background:rgba(255,255,255,.05)}
 tr.pick:active{background:#21262d}
-tr.off{opacity:.34}
+tr.flash td{animation:rowpick .5s ease-out}
+tr.off{opacity:.3}
 tr.off td{cursor:default}
+#candCard{position:relative;overflow:hidden}
+#candCard::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;
+  background:var(--c,var(--gold))}
+.from b{color:var(--c,var(--gold))}
 .no{font-size:11px;color:var(--dim);white-space:nowrap}
-.tm{font-size:11px;color:var(--dim)}
+.tm{font-size:11px;color:var(--c,var(--dim));font-weight:700}
 .tag{display:inline-block;border-radius:5px;padding:2px 6px;font-size:12px;font-weight:700;
   color:var(--c,var(--dim));background:color-mix(in srgb,var(--c,#8b949e) 18%,transparent)}
 .from{font-size:14px;color:var(--dim);margin-bottom:9px}
@@ -198,6 +217,14 @@ summary{cursor:pointer;color:var(--dim);font-size:14px}
 <script>
 const L=window.LCK, F=L.feats, NF=F.length;
 const POS=["top","jng","mid","bot","sup"];
+// 계보별 팀 색. 실제 구단 상징색을 어두운 배경에서 보이게 조정한 값.
+const TEAMC={T1:"#ff2f45",GENG:"#d8b24e",KT:"#e8202c",DK:"#3a8fe0",HLE:"#ff8a1f",
+  DRX:"#5a6bff",NS:"#ef4b3a",FREECS:"#2f9bf5",BRION:"#19b5e8",SANDBOX:"#14c8b4",
+  FEARX:"#ff4d7e",GRIFFIN:"#3fd98a",DYNAMICS:"#97a3b8",JINAIR:"#77c94a",
+  SAMSUNG:"#4a74e0",TIGERS:"#ff9a2b",LONGZHU:"#d9b34a",CJ:"#e0575c",
+  MVP:"#8d6cff",KONGDOO:"#ff6fb0",BBQ:"#f7b52e",EVER8:"#57d6e6",
+  PRINCE:"#a87ae0",SBENU:"#ff7f4d"};
+function tc(fr){return TEAMC[fr]||"#8b949e";}
 const POSKR={top:"탑",jng:"정글",mid:"미드",bot:"바텀",sup:"서폿"};
 const WSUM=L.weights.reduce((a,b)=>a+b,0);
 
@@ -249,8 +276,11 @@ function reset(){
   upd();
 }
 function clearReels(){
-  document.getElementById("reelYear").querySelector("span").textContent="----";
-  document.getElementById("reelTeam").querySelector("span").textContent="----";
+  ["reelYear","reelTeam"].forEach(function(id){
+    const el=document.getElementById(id);
+    el.classList.remove("land","spin");
+    el.querySelector("span").textContent="----";
+  });
 }
 function upd(){
   document.getElementById("ryLeft").textContent=S.ry;
@@ -274,7 +304,8 @@ function renderLineup(){
     const body=p?('<div class="nm">'+p.name+'</div><div class="yr">'+p.year+'</div>'+
                   '<div class="tmn">'+p.team+'</div>')
                 :'<div class="nm" style="color:#2b323d">-</div>';
-    return '<div class="slot'+(p?' done':'')+'" style="--c:var(--'+q+')">'+
+    return '<div class="slot'+(p?' done':'')+'" data-q="'+q+'" style="--c:'+
+           (p?tc(p.fr):'#2b323d')+'">'+
            '<div class="pos">'+POSKR[q]+'</div>'+body+'</div>';
   }).join("");
 }
@@ -284,11 +315,8 @@ function cands(key){
 function rosterOf(key){
   return BY[key].slice().sort(function(a,b){return POS.indexOf(a.pos)-POS.indexOf(b.pos);});
 }
-function why(p){
-  if(S.taken[p.name])return "이미 뽑음";
-  if(S.filled[p.pos])return "자리 참";
-  return null;
-}
+function blocked(p){return !!(S.taken[p.name]||S.filled[p.pos]);}
+function why(p){return S.taken[p.name]?"이미 뽑음":null;}
 function pickAny(){
   for(let i=0;i<800;i++){
     const y=YEARS[Math.floor(Math.random()*YEARS.length)];
@@ -332,25 +360,29 @@ function showReels(key,done,lock){
       ry.classList.remove("spin");rt.classList.remove("spin");
       ry.querySelector("span").textContent=parts[0];
       rt.querySelector("span").textContent=NAME[key];
+      const col=tc(parts[1]);
+      rt.style.setProperty("--c",col);
       ry.classList.remove("land");rt.classList.remove("land");
       void ry.offsetWidth;
       ry.classList.add("land");rt.classList.add("land");
-      if(done)done();
+      if(done)setTimeout(done,150);
     }
   },55);
 }
 function openCands(key){
   S.cur=key;
   const parts=key.split("|");
-  document.getElementById("fromLabel").textContent=parts[0]+" "+NAME[key]+" — 한 명을 고르세요";
+  const col=tc(parts[1]);
+  document.getElementById("fromLabel").innerHTML=
+    parts[0]+' <b>'+NAME[key]+'</b> — 한 명을 고르세요';
   const list=rosterOf(key);
   let html='<tr><th class="n">선수</th><th class="p">포지션</th>'+
     F.map(function(f){return '<th>'+SHORT[f]+'</th>';}).join("")+'</tr>';
   html+=list.map(function(p,i){
-    const blocked=why(p);
-    return '<tr class="'+(blocked?"off":"pick")+'" data-i="'+i+'">'+
-      '<td class="n">'+p.name+(blocked?' <span class="no">'+blocked+'</span>':'')+'</td>'+
-      '<td class="p"><span class="tag" style="--c:var(--'+p.pos+')">'+POSKR[p.pos]+'</span></td>'+
+    const bl=blocked(p),note=why(p);
+    return '<tr class="'+(bl?"off":"pick")+'" data-i="'+i+'">'+
+      '<td class="n">'+p.name+(note?' <span class="no">'+note+'</span>':'')+'</td>'+
+      '<td class="p"><span class="tag">'+POSKR[p.pos]+'</span></td>'+
       F.map(function(f,j){
         return '<td class="mono">'+fmt[f](p.raw[j])+'</td>';
       }).join("")+'</tr>';
@@ -358,21 +390,34 @@ function openCands(key){
   const tbl=document.getElementById("tbl");
   tbl.innerHTML=html;
   tbl.querySelectorAll("tr.pick").forEach(function(tr){
-    tr.onclick=function(){choose(list[+tr.dataset.i]);};
+    tr.onclick=function(){choose(list[+tr.dataset.i],tr);};
   });
   const cc=document.getElementById("candCard");
+  cc.style.setProperty("--c",col);
   cc.classList.remove("hidden");
   cc.style.animation="none";void cc.offsetWidth;cc.style.animation="rise .22s ease-out";
   upd();
 }
-function choose(p){
+function choose(p,tr){
+  if(S.rolling)return;
+  S.rolling=true;
+  const col=tc(p.fr);
+  if(tr){
+    tr.style.setProperty("--c",col);
+    tr.classList.remove("flash");void tr.offsetWidth;tr.classList.add("flash");
+  }
   if(S.cur)S.seen.push({key:S.cur,picked:p});
   S.filled[p.pos]=p;S.taken[p.name]=1;S.lineup.push(p);S.cur=null;
-  renderLineup();
-  document.getElementById("candCard").classList.add("hidden");
-  clearReels();
   upd();
-  if(S.lineup.length===5)setTimeout(finish,260);
+  setTimeout(function(){
+    renderLineup();
+    const slot=document.querySelector('.slot[data-q="'+p.pos+'"]');
+    if(slot)slot.classList.add("just");
+    document.getElementById("candCard").classList.add("hidden");
+    clearReels();
+    S.rolling=false;upd();
+    if(S.lineup.length===5)setTimeout(finish,520);
+  },190);
 }
 function finish(){
   const d=dev(S.lineup),w=Math.round(wins(d)),g=grade(w);
@@ -398,7 +443,8 @@ function finish(){
     F.map(f=>'<th>'+SHORT[f]+'</th>').join("")+'</tr>';
   html+=POS.map(function(q){
     const p=S.filled[q];
-    return '<tr><td class="n">'+p.name+'</td><td class="p"><span class="tag" style="--c:var(--'+q+')">'+POSKR[q]+'</span></td>'+
+    return '<tr style="--c:'+tc(p.fr)+'"><td class="n">'+p.name+'</td>'+
+      '<td class="p"><span class="tag">'+POSKR[q]+'</span></td>'+
       '<td class="p mono" style="font-size:12px">'+p.year+'<br><span class="tm">'+p.team+'</span></td>'+
       F.map(function(f,j){
         return '<td class="mono">'+fmt[f](p.raw[j])+'</td>';
