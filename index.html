@@ -217,14 +217,23 @@ summary{cursor:pointer;color:var(--dim);font-size:14px}
 <script>
 const L=window.LCK, F=L.feats, NF=F.length;
 const POS=["top","jng","mid","bot","sup"];
-// 계보별 팀 색. 실제 구단 상징색을 어두운 배경에서 보이게 조정한 값.
-const TEAMC={T1:"#ff2f45",GENG:"#d8b24e",KT:"#e8202c",DK:"#3a8fe0",HLE:"#ff8a1f",
-  DRX:"#5a6bff",NS:"#ef4b3a",FREECS:"#2f9bf5",BRION:"#19b5e8",SANDBOX:"#14c8b4",
-  FEARX:"#ff4d7e",GRIFFIN:"#3fd98a",DYNAMICS:"#97a3b8",JINAIR:"#77c94a",
-  SAMSUNG:"#4a74e0",TIGERS:"#ff9a2b",LONGZHU:"#d9b34a",CJ:"#e0575c",
-  MVP:"#8d6cff",KONGDOO:"#ff6fb0",BBQ:"#f7b52e",EVER8:"#57d6e6",
-  PRINCE:"#a87ae0",SBENU:"#ff7f4d"};
-function tc(fr){return TEAMC[fr]||"#8b949e";}
+// 팀 색. 위키가 보관 중인 공식 로고 원본의 픽셀을 측정한 값이다.
+// 계보가 아니라 '그 해 팀명'이 키다. 아프리카(파랑)와 광동(주황)처럼
+// 같은 계보 안에서 색이 완전히 바뀐 팀이 있기 때문이다.
+// 어두운 배경에서 안 보이는 10개는 색상·채도를 그대로 둔 채 명도만 올렸다.
+const TEAMC={
+  "SK Telecom T1":"#e4002b","T1":"#e4002b","Gen.G":"#aa8b2f","KT Rolster":"#ed1c24",
+  "DAMWON Gaming":"#62c8c6","DWG KIA":"#62c8c6","Dplus KIA":"#62c8c6",
+  "Hanwha Life Esports":"#f37321","Nongshim RedForce":"#ec1c24","Kingzone DragonX":"#1e6eb9",
+  "DragonX":"#5a8dff","Kiwoom DRX":"#5a8dff","DRX":"#5d4ffc","Afreeca Freecs":"#0086ff",
+  "Kwangdong Freecs":"#ff4219","DN Freecs":"#1d5ef5","DN SOOPers":"#1e5ef4",
+  "Fredit BRION":"#007c44","HANJIN BRION":"#007c44","OK BRION":"#007c44","BNK FearX":"#ffd100",
+  "Liiv SANDBOX":"#ffc900","SANDBOX Gaming":"#ffc600","Samsung Galaxy":"#0071b1",
+  "ROX Tigers":"#ff9601","Longzhu Gaming":"#277eb8","CJ Entus":"#0a6eb9","MVP":"#0e77bc",
+  "Kongdoo Monster":"#4fb8ae","bbq Olivers":"#d70a19","ESC Ever":"#f15929",
+  "Ever8 Winners":"#cb9243","SBENU Korea":"#8b949e","Jin Air Green Wings":"#14a73c",
+  "Griffin":"#d71820","SeolHaeOne Prince":"#d74645","Team Dynamics":"#1374bc"};
+function tc(team){return TEAMC[team]||"#8b949e";}
 const POSKR={top:"탑",jng:"정글",mid:"미드",bot:"바텀",sup:"서폿"};
 const WSUM=L.weights.reduce((a,b)=>a+b,0);
 
@@ -305,7 +314,7 @@ function renderLineup(){
                   '<div class="tmn">'+p.team+'</div>')
                 :'<div class="nm" style="color:#2b323d">-</div>';
     return '<div class="slot'+(p?' done':'')+'" data-q="'+q+'" style="--c:'+
-           (p?tc(p.fr):'#2b323d')+'">'+
+           (p?tc(p.team):'#2b323d')+'">'+
            '<div class="pos">'+POSKR[q]+'</div>'+body+'</div>';
   }).join("");
 }
@@ -360,7 +369,7 @@ function showReels(key,done,lock){
       ry.classList.remove("spin");rt.classList.remove("spin");
       ry.querySelector("span").textContent=parts[0];
       rt.querySelector("span").textContent=NAME[key];
-      const col=tc(parts[1]);
+      const col=tc(NAME[key]);
       rt.style.setProperty("--c",col);
       ry.classList.remove("land");rt.classList.remove("land");
       void ry.offsetWidth;
@@ -372,7 +381,7 @@ function showReels(key,done,lock){
 function openCands(key){
   S.cur=key;
   const parts=key.split("|");
-  const col=tc(parts[1]);
+  const col=tc(NAME[key]);
   document.getElementById("fromLabel").innerHTML=
     parts[0]+' <b>'+NAME[key]+'</b> — 한 명을 고르세요';
   const list=rosterOf(key);
@@ -401,7 +410,7 @@ function openCands(key){
 function choose(p,tr){
   if(S.rolling)return;
   S.rolling=true;
-  const col=tc(p.fr);
+  const col=tc(p.team);
   if(tr){
     tr.style.setProperty("--c",col);
     tr.classList.remove("flash");void tr.offsetWidth;tr.classList.add("flash");
@@ -443,7 +452,7 @@ function finish(){
     F.map(f=>'<th>'+SHORT[f]+'</th>').join("")+'</tr>';
   html+=POS.map(function(q){
     const p=S.filled[q];
-    return '<tr style="--c:'+tc(p.fr)+'"><td class="n">'+p.name+'</td>'+
+    return '<tr style="--c:'+tc(p.team)+'"><td class="n">'+p.name+'</td>'+
       '<td class="p"><span class="tag">'+POSKR[q]+'</span></td>'+
       '<td class="p mono" style="font-size:12px">'+p.year+'<br><span class="tm">'+p.team+'</span></td>'+
       F.map(function(f,j){
