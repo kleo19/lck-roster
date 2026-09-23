@@ -69,6 +69,16 @@ details{margin-top:8px}
 summary{cursor:pointer;color:var(--dim);font-size:14px}
 .rules li{margin:5px 0;color:var(--dim);font-size:14px}
 .rules h4{margin:12px 0 5px;font-size:14px;color:var(--tx)}
+
+/* 개발자용 패널 */
+#devBox{margin-top:10px}
+#devBox summary{font-size:13px;color:#6e7681}
+.dev{font-size:13px;color:var(--dim);line-height:1.6}
+.dev table{margin-top:6px}
+.dev th,.dev td{font-size:12px;padding:5px 2px}
+.dev .hit{color:var(--ok)}
+.dev .miss{color:var(--hot)}
+.dev .sum{margin:8px 0 2px;color:var(--tx);font-size:13px}
 </style>
 </head>
 <body>
@@ -136,6 +146,10 @@ summary{cursor:pointer;color:var(--dim);font-size:14px}
     <div class="bars" id="bars"></div>
   </div>
   <div class="card"><div style="overflow-x:auto"><table id="finalTbl"></table></div></div>
+  <details class="card" id="devBox">
+    <summary>이번 판 최선 조합 (개발용)</summary>
+    <div class="dev" id="devBody"></div>
+  </details>
   <button class="primary" id="again" style="width:100%;padding:13px">다시 하기</button>
 </section>
 
@@ -188,7 +202,7 @@ const SHORT={kda:"KDA",kills:"킬",assists:"어시",dpm:"딜/분",cspm:"CS/분",
 
 let S={};
 function reset(){
-  S={filled:{},taken:{},lineup:[],cur:null,ry:C.reroll.year,rt:C.reroll.team,rolling:false};
+  S={filled:{},taken:{},lineup:[],cur:null,ry:C.reroll.year,rt:C.reroll.team,rolling:false,seen:[]};
   renderLineup();
   document.getElementById("candCard").classList.add("hidden");
   clearReels();
@@ -302,6 +316,7 @@ function openCands(key){
   upd();
 }
 function choose(p){
+  if(S.cur)S.seen.push({key:S.cur,picked:p});
   S.filled[p.pos]=p;S.taken[p.name]=1;S.lineup.push(p);S.cur=null;
   renderLineup();
   document.getElementById("candCard").classList.add("hidden");
@@ -336,8 +351,98 @@ function finish(){
       }).join("")+'</tr>';
   }).join("");
   document.getElementById("finalTbl").innerHTML=html;
+  document.getElementById("devBox").open=false;
+  renderDev();
   show("result");
 }
+// 선수 한 명이 dev에 기여하는 값. dev는 포지션 가중 평균이라 선수별로 분해된다.
+const PWSUM=POS.reduce((a,q)=>a+PW[q],0);
+function contrib(p){
+  let v=0;
+  for(let i=0;i<NF;i++)v+=L.weights[i]*(p.z[i]/L.sd[i]);
+  return v*PW[p.pos]/PWSUM;
+}
+const DEV_BASE=(function(){
+  let b=0;
+  for(let i=0;i<NF;i++)b-=L.weights[i]*(L.pooled[i]/L.sd[i]);
+  return b;
+})();
+
+// 이번 판에 나온 다섯 팀-연도로 만들 수 있는 최선 라인업.
+// 스핀↔포지션 배정 120가지를 전부 본다.
+function bestOfSeen(seen){
+  const n=seen.length;
+  if(n<5)return null;
+  // best[i][q] = i번째 스핀에서 포지션 q를 맡길 때의 최고 기여와 선수
+  const best=seen.map(function(s){
+    const o={};
+    for(const q of POS){
+      const c=BY[s.key].filter(p=>p.pos===q);
+      if(c.length){
+        const top=c.reduce((a,b)=>contrib(a)>=contrib(b)?a:b);
+        o[q]={v:contrib(top),p:top};
+      }
+    }
+    return o;
+  });
+  let bestSum=-Infinity,bestPick=null;
+  const perm=[],used=new Array(5).fill(false);
+  (function go(i){
+    if(i===5){
+      let sum=0,ok=true,names={};
+      const picks=[];
+      for(let k=0;k<5;k++){
+        const cell=best[k][perm[k]];
+        if(!cell){ok=false;break;}
+        if(names[cell.p.name]){ok=false;break;}
+        names[cell.p.name]=1; sum+=cell.v; picks.push(cell.p);
+      }
+      if(ok&&sum>bestSum){bestSum=sum;bestPick=picks;}
+      return;
+    }
+    for(let q=0;q<5;q++){
+      if(used[q])continue;
+      used[q]=true;perm[i]=POS[q];go(i+1);used[q]=false;
+    }
+  })(0);
+  if(!bestPick)return null;
+  return {lineup:bestPick,dev:bestSum+DEV_BASE};
+}
+
+function renderDev(){
+  const box=document.getElementById("devBody");
+  const b=bestOfSeen(S.seen);
+  if(!b){box.innerHTML='기록 없음';return;}
+  const myDev=dev(S.lineup),myW=wins(myDev);
+  const bw=wins(b.dev);
+  let h='<div class="sum">내 결과 <b>'+Math.round(myW)+'승</b> ('+myDev.toFixed(4)+')'+
+        ' · 최선 <b>'+Math.round(bw)+'승</b> ('+b.dev.toFixed(4)+')'+
+        ' · 차이 <b>'+(Math.round(bw)-Math.round(myW))+'승</b></div>';
+  h+='<table><tr><th class="n">스핀</th><th class="n">내 픽</th><th class="n">최선 픽</th><th>기여차</th></tr>';
+  const byPos={};
+  for(const p of b.lineup)byPos[p.pos]=p;
+  for(let i=0;i<S.seen.length;i++){
+    const s=S.seen[i],mine=s.picked;
+    const best=b.lineup[i];   // 최선 라인업은 스핀 순서대로 담겨 있다
+    const same=best&&best.name===mine.name;
+    const gap=best?(contrib(best)-contrib(mine)):0;
+    h+='<tr><td class="n">'+s.key.split("|")[0]+' '+NAME[s.key]+'</td>'+
+       '<td class="n">'+mine.name+'('+POSKR[mine.pos]+')</td>'+
+       '<td class="n '+(same?'hit':'miss')+'">'+(best?best.name+'('+POSKR[best.pos]+')':'-')+'</td>'+
+       '<td class="mono">'+(gap>0?'+'+gap.toFixed(3):gap.toFixed(3))+'</td></tr>';
+  }
+  h+='</table>';
+  h+='<div class="sum">최선 라인업</div><table><tr><th class="n">자리</th><th class="n">선수</th><th class="n">소속</th><th>기여</th></tr>';
+  for(const q of POS){
+    const p=byPos[q];
+    if(!p)continue;
+    h+='<tr><td class="n">'+POSKR[q]+'</td><td class="n">'+p.name+'</td>'+
+       '<td class="n">'+p.year+' '+p.team+'</td><td class="mono">'+contrib(p).toFixed(3)+'</td></tr>';
+  }
+  h+='</table>';
+  box.innerHTML=h;
+}
+
 function show(id){
   ["home","draft","result"].forEach(function(s){
     document.getElementById(s).classList.toggle("hidden",s!==id);
