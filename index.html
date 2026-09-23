@@ -6,35 +6,69 @@
 <title>30-0 · LCK 올타임 로스터</title>
 <style>
 :root{
-  --bg:#0d1117; --card:#161b22; --line:#272e38; --tx:#e6edf3; --dim:#8b949e;
-  --gold:#c8aa6e; --blue:#0ac8b9; --hot:#e84057; --ok:#3fb950;
+  --bg:#0a0e14; --card:#151b24; --line:#252d3a; --tx:#e6edf3; --dim:#8b949e;
+  --gold:#c8aa6e; --gold2:#f0d9a8; --blue:#0ac8b9; --hot:#e84057; --ok:#3fb950;
+  --top:#e8a33d; --jng:#5cc98f; --mid:#4da3ff; --bot:#e8574a; --sup:#b57ae8;
 }
+@keyframes pop{from{transform:scale(.82);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes rise{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(200,170,110,.35)}50%{box-shadow:0 0 0 7px rgba(200,170,110,0)}}
+@keyframes grow{from{width:0}}
+@keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+@keyframes fall{to{transform:translateY(104vh) rotate(560deg)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);
+body{margin:0;color:var(--tx);
+  background:var(--bg);
+  background-image:radial-gradient(900px 420px at 50% -120px,rgba(200,170,110,.13),transparent 70%),
+                   radial-gradient(700px 360px at 100% 100%,rgba(10,200,185,.07),transparent 70%);
+  background-attachment:fixed;
   font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Malgun Gothic",sans-serif;
   -webkit-text-size-adjust:100%}
 .wrap{max-width:640px;margin:0 auto;padding:16px 12px 44px}
 h1{font-size:26px;margin:4px 0 3px;letter-spacing:-.5px}
 h1 b{color:var(--gold)}
 .sub{color:var(--dim);font-size:14px;margin-bottom:16px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.035),transparent 60%),var(--card);
+  border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:11px;
+  box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 6px 18px rgba(0,0,0,.28)}
 button{font:inherit;color:var(--tx);background:#21262d;border:1px solid var(--line);
   border-radius:9px;padding:12px 12px;cursor:pointer}
-button:active{transform:translateY(1px)}
-button:disabled{opacity:.35;cursor:default}
-.primary{background:var(--gold);color:#0d1117;border-color:var(--gold);font-weight:700}
+button{transition:transform .08s,filter .15s,opacity .15s}
+button:active{transform:translateY(1px) scale(.985)}
+button:disabled{opacity:.3;cursor:default}
+button:not(:disabled):hover{filter:brightness(1.14)}
+.primary{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#0a0e14;
+  border-color:var(--gold);font-weight:800;letter-spacing:-.2px}
+#start{animation:glow 2.6s ease-in-out infinite}
 .hidden{display:none!important}
 .mono{font-variant-numeric:tabular-nums}
 
 .lineup{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.slot{background:#0d1117;border:1px solid var(--line);border-radius:9px;padding:9px 3px;text-align:center;min-height:82px}
-.slot.done{border-color:var(--gold)}
-.slot .pos{font-size:12px;color:var(--dim);letter-spacing:.5px}
-.slot .nm{font-size:14px;font-weight:700;margin-top:4px;word-break:break-all;line-height:1.2}
-.slot .yr{font-size:12px;color:var(--dim);margin-top:3px}
+.slot{position:relative;overflow:hidden;background:#0b1017;border:1px solid var(--line);
+  border-radius:11px;padding:11px 3px 9px;text-align:center;min-height:94px;
+  transition:border-color .2s,background .2s}
+.slot::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--c);opacity:.45}
+.slot.done{border-color:var(--c)}
+.slot.done::before{opacity:1}
+.slot.done .nm{animation:pop .22s ease-out}
+.slot .pos{font-size:12px;color:var(--dim);letter-spacing:.5px;font-weight:600}
+.slot.done .pos{color:var(--c)}
+.slot .nm{font-size:14px;font-weight:700;margin-top:5px;word-break:break-all;line-height:1.2}
+.slot .yr{font-size:11px;color:var(--dim);margin-top:3px}
+.slot .tmn{font-size:10px;color:#5a6472;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog{display:flex;gap:4px;margin:0 0 10px}
+.prog i{flex:1;height:3px;border-radius:2px;background:#222a35;transition:background .25s}
+.prog i.on{background:var(--gold)}
 
 .reels{display:grid;grid-template-columns:1fr 1.6fr;gap:8px;margin-bottom:8px}
-.reel{background:#0d1117;border:1px solid var(--line);border-radius:9px;padding:8px;text-align:center}
+.reel{position:relative;background:#0b1017;border:1px solid var(--line);border-radius:11px;
+  padding:9px;text-align:center;overflow:hidden}
+.reel.spin{border-color:rgba(10,200,185,.5)}
+.reel.spin::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(10,200,185,.13),transparent);
+  animation:sweep .7s linear infinite}
+.reel.land span{animation:pop .24s ease-out}
 .reel small{display:block;font-size:12px;color:var(--dim)}
 .reel span{font-size:20px;font-weight:700;letter-spacing:-.3px}
 .reel.spin span{color:var(--blue)}
@@ -47,24 +81,29 @@ th{color:var(--dim);font-weight:400;font-size:12px}
 td.n,th.n{text-align:left;width:23%;padding-left:2px}
 td.p,th.p{text-align:center;width:11%}
 #finalTbl td.p:nth-child(3),#finalTbl th.p:nth-child(3){width:15%}
-tr.pick{cursor:pointer}
+tr.pick{cursor:pointer;transition:background .12s}
+tr.pick:hover{background:rgba(255,255,255,.05)}
 tr.pick:active{background:#21262d}
 tr.off{opacity:.34}
 tr.off td{cursor:default}
 .no{font-size:11px;color:var(--dim);white-space:nowrap}
 .tm{font-size:11px;color:var(--dim)}
-.tag{display:inline-block;background:#21262d;border-radius:4px;padding:2px 5px;font-size:12px;color:var(--dim)}
+.tag{display:inline-block;border-radius:5px;padding:2px 6px;font-size:12px;font-weight:700;
+  color:var(--c,var(--dim));background:color-mix(in srgb,var(--c,#8b949e) 18%,transparent)}
 .from{font-size:14px;color:var(--dim);margin-bottom:9px}
 
-.big{font-size:46px;font-weight:800;letter-spacing:-2px}
-.grade{font-size:50px;font-weight:800;line-height:1}
+.big{font-size:48px;font-weight:800;letter-spacing:-2px;animation:pop .3s ease-out}
+.grade{font-size:54px;font-weight:900;line-height:1;animation:pop .34s ease-out .04s backwards;
+  text-shadow:0 0 22px currentColor}
+.glab{font-size:11px;letter-spacing:1.6px;color:var(--dim);margin-top:5px;font-weight:600}
 .rec{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .lab{font-size:13px;color:var(--dim)}
 .bars{margin-top:12px}
 .bar{display:grid;grid-template-columns:92px 1fr 48px;align-items:center;gap:8px;margin:7px 0;font-size:13px}
 .track{height:8px;background:#0d1117;border-radius:4px;overflow:hidden}
-.fill{height:100%;background:var(--blue);border-radius:3px}
-.fill.low{background:var(--hot)}
+.fill{height:100%;border-radius:4px;animation:grow .55s ease-out;
+  background:linear-gradient(90deg,#0a8f85,var(--blue))}
+.fill.low{background:linear-gradient(90deg,#8c2f38,var(--hot))}
 details{margin-top:8px}
 summary{cursor:pointer;color:var(--dim);font-size:14px}
 .rules li{margin:5px 0;color:var(--dim);font-size:14px}
@@ -113,7 +152,7 @@ summary{cursor:pointer;color:var(--dim);font-size:14px}
 </section>
 
 <section id="draft" class="hidden">
-  <div class="card"><div class="lineup" id="lineup"></div></div>
+  <div class="card"><div class="prog" id="prog"></div><div class="lineup" id="lineup"></div></div>
   <div class="card">
     <div class="reels">
       <div class="reel" id="reelYear"><small>연도</small><span>----</span></div>
@@ -141,6 +180,7 @@ summary{cursor:pointer;color:var(--dim);font-size:14px}
       <div style="text-align:center">
         <div class="lab">등급</div>
         <div class="grade" id="recGrade">-</div>
+        <div class="glab" id="gradeLab"></div>
       </div>
     </div>
     <div class="bars" id="bars"></div>
@@ -226,11 +266,16 @@ function upd(){
   document.getElementById("spin").disabled=!!S.cur||S.rolling;
 }
 function renderLineup(){
+  const n=S.lineup.length;
+  document.getElementById("prog").innerHTML=
+    [0,1,2,3,4].map(function(i){return '<i class="'+(i<n?'on':'')+'"></i>';}).join("");
   document.getElementById("lineup").innerHTML=POS.map(function(q){
     const p=S.filled[q];
-    const body=p?('<div class="nm">'+p.name+'</div><div class="yr">'+p.year+'</div>')
-                :'<div class="nm" style="color:#30363d">-</div>';
-    return '<div class="slot'+(p?' done':'')+'"><div class="pos">'+POSKR[q]+'</div>'+body+'</div>';
+    const body=p?('<div class="nm">'+p.name+'</div><div class="yr">'+p.year+'</div>'+
+                  '<div class="tmn">'+p.team+'</div>')
+                :'<div class="nm" style="color:#2b323d">-</div>';
+    return '<div class="slot'+(p?' done':'')+'" style="--c:var(--'+q+')">'+
+           '<div class="pos">'+POSKR[q]+'</div>'+body+'</div>';
   }).join("");
 }
 function cands(key){
@@ -287,6 +332,9 @@ function showReels(key,done,lock){
       ry.classList.remove("spin");rt.classList.remove("spin");
       ry.querySelector("span").textContent=parts[0];
       rt.querySelector("span").textContent=NAME[key];
+      ry.classList.remove("land");rt.classList.remove("land");
+      void ry.offsetWidth;
+      ry.classList.add("land");rt.classList.add("land");
       if(done)done();
     }
   },55);
@@ -302,7 +350,7 @@ function openCands(key){
     const blocked=why(p);
     return '<tr class="'+(blocked?"off":"pick")+'" data-i="'+i+'">'+
       '<td class="n">'+p.name+(blocked?' <span class="no">'+blocked+'</span>':'')+'</td>'+
-      '<td class="p"><span class="tag">'+POSKR[p.pos]+'</span></td>'+
+      '<td class="p"><span class="tag" style="--c:var(--'+p.pos+')">'+POSKR[p.pos]+'</span></td>'+
       F.map(function(f,j){
         return '<td class="mono">'+fmt[f](p.raw[j])+'</td>';
       }).join("")+'</tr>';
@@ -312,7 +360,9 @@ function openCands(key){
   tbl.querySelectorAll("tr.pick").forEach(function(tr){
     tr.onclick=function(){choose(list[+tr.dataset.i]);};
   });
-  document.getElementById("candCard").classList.remove("hidden");
+  const cc=document.getElementById("candCard");
+  cc.classList.remove("hidden");
+  cc.style.animation="none";void cc.offsetWidth;cc.style.animation="rise .22s ease-out";
   upd();
 }
 function choose(p){
@@ -329,7 +379,11 @@ function finish(){
   document.getElementById("recBig").textContent=w+"-"+(C.games-w);
   const gd=document.getElementById("recGrade");
   gd.textContent=g;
-  gd.style.color=w>=C.games?"var(--gold)":(w>=18?"var(--ok)":(w>=10?"var(--tx)":"var(--hot)"));
+  gd.style.color=w>=C.games?"var(--gold)":(w>=22?"var(--ok)":(w>=14?"var(--tx)":"var(--hot)"));
+  document.getElementById("gradeLab").textContent=
+    ({S:"PERFECT","A+":"HISTORIC",A:"CHAMPION",B:"CONTENDER",
+      C:"PLAYOFF",D:"AVERAGE",F:"REBUILD"})[g]||"";
+  if(w>=C.games)confetti();
   const mean=new Array(NF);
   for(let i=0;i<NF;i++)mean[i]=wavg(S.lineup,i);
   document.getElementById("bars").innerHTML=F.map(function(f,i){
@@ -344,7 +398,7 @@ function finish(){
     F.map(f=>'<th>'+SHORT[f]+'</th>').join("")+'</tr>';
   html+=POS.map(function(q){
     const p=S.filled[q];
-    return '<tr><td class="n">'+p.name+'</td><td class="p"><span class="tag">'+POSKR[q]+'</span></td>'+
+    return '<tr><td class="n">'+p.name+'</td><td class="p"><span class="tag" style="--c:var(--'+q+')">'+POSKR[q]+'</span></td>'+
       '<td class="p mono" style="font-size:12px">'+p.year+'<br><span class="tm">'+p.team+'</span></td>'+
       F.map(function(f,j){
         return '<td class="mono">'+fmt[f](p.raw[j])+'</td>';
@@ -443,10 +497,27 @@ function renderDev(){
   box.innerHTML=h;
 }
 
+function confetti(){
+  const box=document.createElement("div");
+  box.style.cssText="position:fixed;inset:0;pointer-events:none;z-index:9;overflow:hidden";
+  for(let i=0;i<70;i++){
+    const d=document.createElement("i");
+    const c=["#c8aa6e","#f0d9a8","#0ac8b9","#e6edf3"][i%4];
+    d.style.cssText="position:absolute;top:-14px;width:7px;height:11px;border-radius:1px;background:"+c+
+      ";left:"+(Math.random()*100)+"%;opacity:"+(0.55+Math.random()*0.45)+
+      ";animation:fall "+(1.5+Math.random()*1.5)+"s linear "+(Math.random()*0.5)+"s forwards";
+    box.appendChild(d);
+  }
+  document.body.appendChild(box);
+  setTimeout(function(){box.remove();},3700);
+}
+
 function show(id){
   ["home","draft","result"].forEach(function(s){
     document.getElementById(s).classList.toggle("hidden",s!==id);
   });
+  const el=document.getElementById(id);
+  el.style.animation="none";void el.offsetWidth;el.style.animation="rise .26s ease-out";
   window.scrollTo(0,0);
 }
 document.getElementById("start").onclick=function(){reset();show("draft");};
